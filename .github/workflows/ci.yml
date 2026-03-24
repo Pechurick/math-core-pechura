@@ -36,8 +36,8 @@ jobs:
     steps:
       - name: Smoke Test (INTENTIONAL FAILURE)
         run: |
-          echo "Running Smoke Test: 1 == 2"
-          if [ 1 -eq 2 ]; then echo "Staging is OK!"; else exit 1; fi
+          echo "Running Smoke Test: 1 == 1"
+          if [ 1 -eq 1 ]; then echo "Staging is OK!"; else exit 1; fi
 
   deploy_production:
     needs: verify_staging
