@@ -6,66 +6,44 @@ on:
     branches: [ main ]
 
 jobs:
-  # Stage 1: Test
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - name: Unit Test
-        run: node test.js
+      - run: node test.js
 
-  # Stage 2: Build
   build:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Створення артефакту
-        run: echo "App build completed on $(date)" > build.txt
-      - name: Збереження артефакту
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-artifact
-          path: build.txt
+      - run: echo "App build completed on $(date)" > build.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: app-artifact, path: build.txt }
 
-  # Stage 3: Deploy to Staging
   deploy_staging:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Завантаження артефакту
-        uses: actions/download-artifact@v4
-        with:
-          name: app-artifact
-      - name: Імітація деплою
-        run: |
-          echo "Deploying to Staging Environment..."
-          cat build.txt
+      - uses: actions/download-artifact@v4
+        with: { name: app-artifact }
+      - run: echo "Deploying to Staging..."; cat build.txt
 
-  # Stage 4: Verify Staging
   verify_staging:
     needs: deploy_staging
     runs-on: ubuntu-latest
     steps:
-      - name: Smoke Test
+      - name: Smoke Test (INTENTIONAL FAILURE)
         run: |
-          echo "Running Smoke Test: 1 == 1"
-          if [ 1 -eq 1 ]; then echo "Staging is OK!"; else exit 1; fi
+          echo "Running Smoke Test: 1 == 2"
+          if [ 1 -eq 2 ]; then echo "Staging is OK!"; else exit 1; fi
 
-  # Stage 5: Deploy to Production
   deploy_production:
     needs: verify_staging
     runs-on: ubuntu-latest
-    environment:
-      name: production # Це підключить те саме ручне підтвердження!
+    environment: { name: production }
     steps:
-      - name: Завантаження артефакту
-        uses: actions/download-artifact@v4
-        with:
-          name: app-artifact
-      - name: Деплой на Production
-        run: |
-          echo "🚀 Deploying to Production Server..."
-          cat build.txt
+      - uses: actions/download-artifact@v4
+        with: { name: app-artifact }
+      - run: echo "Deploying to Production..."; cat build.txt
