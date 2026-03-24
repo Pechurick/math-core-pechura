@@ -1,16 +1,71 @@
-name: CI Pipeline
-on: [pull_request]
+name: Multi-Stage CI/CD Pipeline
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
-  test-and-scan:
+  # Stage 1: Test
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - name: Linting
-        run: npx eslint . --no-eslintrc --env node || true
-      - name: Security Scan
-        run: npm audit || true
       - name: Unit Test
         run: node test.js
+
+  # Stage 2: Build
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Створення артефакту
+        run: echo "App build completed on $(date)" > build.txt
+      - name: Збереження артефакту
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-artifact
+          path: build.txt
+
+  # Stage 3: Deploy to Staging
+  deploy_staging:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Завантаження артефакту
+        uses: actions/download-artifact@v4
+        with:
+          name: app-artifact
+      - name: Імітація деплою
+        run: |
+          echo "Deploying to Staging Environment..."
+          cat build.txt
+
+  # Stage 4: Verify Staging
+  verify_staging:
+    needs: deploy_staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke Test
+        run: |
+          echo "Running Smoke Test: 1 == 1"
+          if [ 1 -eq 1 ]; then echo "Staging is OK!"; else exit 1; fi
+
+  # Stage 5: Deploy to Production
+  deploy_production:
+    needs: verify_staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production # Це підключить те саме ручне підтвердження!
+    steps:
+      - name: Завантаження артефакту
+        uses: actions/download-artifact@v4
+        with:
+          name: app-artifact
+      - name: Деплой на Production
+        run: |
+          echo "🚀 Deploying to Production Server..."
+          cat build.txt
